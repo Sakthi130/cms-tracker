@@ -9,10 +9,9 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css"/>
 
-  <!-- Select2 (for multi-select filters) -->
+  <!-- Select2 -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-  <!-- Font + Styles -->
   <style>
     body {
       font-family: 'Manrope', sans-serif;
@@ -75,11 +74,12 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
   <script>
-    // 🔹 Escape function to prevent HTML injection
+    // Escape helper
     function escapeHtml(text) {
       if (!text) return "";
       return $('<div/>').text(text).html();
@@ -91,7 +91,7 @@
       const agentName = params.get("agent");
       $("#agentHeader").text("Agent Details - " + agentName);
 
-      // 🔹 Replace with your actual Google Sheet CSV link
+      // CSV link
       const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2olHcvBurEJqZacnbuCGab0BOjTsm2-Hkzdj-HVoTAWtMAWhk3CVR1p4m6_Ld5IQCpdJ9DSBKYzhV/pub?gid=1446258632&single=true&output=csv";
 
       Papa.parse(sheetUrl, {
@@ -99,20 +99,25 @@
         header: true,
         complete: function (results) {
           const allRows = results.data;
-          // Filter only this agent & won rows
-          const rowsForAgent = allRows.filter(r => r["agent"] === agentName && r["status"] === "won");
 
+          // Filter for agent + Won status
+          const rowsForAgent = allRows.filter(r =>
+            (r["Agent"] && r["Agent"].trim().toLowerCase() === agentName.trim().toLowerCase()) &&
+            (r["Status"] && r["Status"].trim().toLowerCase() === "won")
+          );
+
+          // Init DataTable
           const table = $('#detailsTable').DataTable({
             data: rowsForAgent,
             columns: [
-              { data: "trail id" },
-              { data: "convert date" },
-              { data: "region" },
-              { data: "dept day band" },
-              { data: "pending reason" },
-              { data: "updated band" },
+              { data: "Trail ID", render: d => escapeHtml(d) },
+              { data: "Converted_date", render: d => escapeHtml(d) },
+              { data: "Region", render: d => escapeHtml(d) },
+              { data: "Dept day band", render: d => escapeHtml(d) },
+              { data: "Pending Reason", render: d => escapeHtml(d) },
+              { data: "Updated band", render: d => escapeHtml(d) },
               { 
-                data: "additional comments",
+                data: "Additional comments",
                 render: function(data) {
                   return `<span class="comments-cell">${escapeHtml(data)}</span>`;
                 }
@@ -139,13 +144,12 @@
                   if (d) select.append('<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>');
                 });
 
-                // Initialize select2
                 select.select2({ width: '100%' });
               });
             }
           });
 
-          // 🔹 Expandable comments cell
+          // Expandable comments
           $('#detailsTable').on('click', '.comments-cell', function() {
             $(this).toggleClass('expanded');
           });
