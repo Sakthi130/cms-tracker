@@ -1,190 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agent Details</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
   <style>
-    :root { --brand: #09b367; }
-    body { font-family: 'Manrope', sans-serif; background:#f9fafb; color:#222; }
-    .container { max-width: 1150px; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; margin:18px 0; }
-    .card { background:#fff; padding:16px; border-radius:12px; box-shadow:0 6px 14px rgba(0,0,0,0.06); }
-    h2 { color:var(--brand); font-weight:700; text-align:center; margin-bottom:14px; }
-    table.dataTable thead th { background: var(--brand); color:#fff; text-align:center; }
-    table.dataTable tbody td { text-align:center; vertical-align:middle; }
-    .filter-select, .filter-input { width:100%; margin-top:6px; padding:6px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    table.dataTable thead th {
+      background: #09b367;
+      color: white;
+      text-align: center;
+    }
+
+    table.dataTable tbody td {
+      text-align: center;
+    }
+
+    /* Comments column styling */
+    .comments-cell {
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+
+    .comments-cell.expanded {
+      white-space: normal;
+      overflow: visible;
+    }
+
+    /* Make filters look cleaner */
+    .filter-select {
+      width: 100% !important;
+    }
   </style>
 </head>
 <body>
-  <div class="container mt-3">
-    <div class="topbar">
-      <a class="btn btn-outline-secondary" href="index.html">&larr; Back</a>
-      <div id="agentTitle"></div>
-      <a id="gform" class="btn" target="_blank" style="background:var(--brand); color:#fff;">Update Latest Remark</a>
-    </div>
+  <h2 id="agentTitle">Agent Details</h2>
 
-    <div class="card">
-      <h2 id="hAgent"></h2>
+  <table id="detailsTable" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th>Trail ID</th>
+        <th>Converted Date</th>
+        <th>Region</th>
+        <th>Dept day band</th>
+        <th>Pending Reason</th>
+        <th>Updated band</th>
+        <th>Additional Comments</th>
+      </tr>
+      <!-- Filter row will be injected here -->
+    </thead>
+    <tbody></tbody>
+  </table>
 
-      <table id="detailsTable" class="table table-striped display" style="width:100%">
-        <thead>
-          <tr>
-            <th>Trail ID</th>
-            <th>Converted Date</th>
-            <th>Region</th>
-            <th>Dept day band</th>
-            <th>Pending Reason</th>
-            <th>Updated band</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <!-- DataTables -->
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <!-- Select2 -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
   <script>
-  // === CONFIG ===
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2olHcvBurEJqZacnbuCGab0BOjTsm2-Hkzdj-HVoTAWtMAWhk3CVR1p4m6_Ld5IQCpdJ9DSBKYzhV/pub?gid=1446258632&single=true&output=csv";
-  const GOOGLE_FORM_URL = "https://forms.gle/EtV5VLiMwMsZ6geN8"; // replace
-  const EXPECTED_STATUS = 'won';
-
-  // Helper to get query param
-  function getParam(name) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
-  }
-
-  // Map header rows to lower-case keys
-  function mapRowByLowerKeys(row) {
-    const mapped = {};
-    for (const k in row) mapped[k.trim().toLowerCase()] = (row[k] || '').toString().trim();
-    return mapped;
-  }
-
-  // Run
-  (function(){
-    const agentName = getParam('agent') || '';
-    if (!agentName) {
-      document.getElementById('hAgent').textContent = 'No agent selected';
-      return;
+    // Escape HTML helper
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text.replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
     }
-    document.getElementById('hAgent').textContent = agentName;
-    document.getElementById('gform').href = GOOGLE_FORM_URL;
 
-    Papa.parse(SHEET_CSV_URL, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        const raw = results.data;
-        const rowsForAgent = [];
+    $(document).ready(function () {
+      // Parse agent name from URL
+      const params = new URLSearchParams(window.location.search);
+      const agentName = params.get("agent");
+      $("#agentTitle").text(`Agent Details - ${agentName}`);
 
-        for (const r of raw) {
-          const row = mapRowByLowerKeys(r);
-          const status = row['status'] || row['trail status'] || '';
-          if ((row['agent'] || '') === agentName && status.toLowerCase() === EXPECTED_STATUS) {
-            rowsForAgent.push({
-              trail: row['trail id'] || row['trailid'] || '',
-              converted: row['converted_date'] || row['convert date'] || row['converted date'] || '',
-              region: row['region'] || '',
-              dept: row['dept day band'] || row['deptdayband'] || '',
-              reason: row['pending reason'] || row['pendingreason'] || '',
-              updated: row['updated band'] || row['updatedband'] || row['last updated'] || ''
-            });
-          }
+      // Dummy data (replace with your actual sheet parsing logic)
+      const rowsForAgent = [
+        {
+          trail: "TR123",
+          date: "2025-09-10",
+          region: "Europe",
+          dept: "<10 days",
+          reason: "Awaiting Docs",
+          updated: "1 day ago",
+          comments: "Customer asked for urgent update, long notes go here for testing text wrapping..."
+        },
+        {
+          trail: "TR456",
+          date: "2025-09-12",
+          region: "Asia",
+          dept: "<5 days",
+          reason: "Pending Payment",
+          updated: "Today",
+          comments: "Payment pending since last week, escalation required."
         }
+      ];
 
-        // Build table body
-        const tbody = $('#detailsTable tbody');
-        tbody.empty();
-        rowsForAgent.forEach(r => {
-          tbody.append(`<tr>
+      // Populate table
+      rowsForAgent.forEach(r => {
+        $("#detailsTable tbody").append(`
+          <tr>
             <td>${escapeHtml(r.trail)}</td>
-            <td>${escapeHtml(r.converted)}</td>
+            <td>${escapeHtml(r.date)}</td>
             <td>${escapeHtml(r.region)}</td>
             <td>${escapeHtml(r.dept)}</td>
             <td>${escapeHtml(r.reason)}</td>
             <td>${escapeHtml(r.updated)}</td>
-          </tr>`);
-        });
+            <td class="comments-cell">${escapeHtml(r.comments)}</td>
+          </tr>
+        `);
+      });
 
-        // Insert filter row directly beneath header
-        if ($('#detailsTable thead tr.filter-row').length === 0) {
-          const filterRow = $('<tr class="filter-row"></tr>');
-          filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Trail ID" /></th>');
-          filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Converted Date" /></th>');
-          filterRow.append('<th><select class="filter-select"><option value="">All</option></select></th>');
-          filterRow.append('<th><select class="filter-select"><option value="">All</option></select></th>');
-          filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Pending Reason" /></th>');
-          filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Updated band" /></th>');
-          $('#detailsTable thead').append(filterRow);
-        }
+      // Add filter row
+      $("#detailsTable thead").append('<tr class="filters"></tr>');
+      $("#detailsTable thead tr:eq(0) th").each(function () {
+        $(".filters").append('<th><select class="filter-select" multiple><option value="">All</option></select></th>');
+      });
 
-        // Initialize DataTable
-        const table = $('#detailsTable').DataTable({
-          orderCellsTop: true,
-          fixedHeader: true,
-          pageLength: 10,
-          lengthChange: true
-        });
+      // Initialize DataTable
+      const table = $("#detailsTable").DataTable({
+        orderCellsTop: true,
+        fixedHeader: true,
+        initComplete: function () {
+          this.api().columns().every(function () {
+            const column = this;
+            const select = $(".filter-select").eq(column.index());
 
-        // Setup filtering
-        $('#detailsTable thead tr.filter-row th').each(function (i) {
-          const column = table.column(i);
-
-          // populate selects with unique values (for select columns)
-          const select = $(this).find('select');
-          if (select.length) {
+            // Populate unique options
             column.data().unique().sort().each(function (d) {
-              if (d !== '' && select.find('option[value="'+d+'"]').length === 0) {
-                select.append('<option value="'+escapeHtml(d)+'">'+escapeHtml(d)+'</option>');
+              if (d) {
+                select.append('<option value="' + d + '">' + d + '</option>');
               }
             });
-            select.on('change', function () {
-              const val = $.fn.dataTable.util.escapeRegex($(this).val());
-              column.search(val ? '^'+val+'$' : '', true, false).draw();
-            });
-          }
 
-          // inputs
-          const input = $(this).find('input');
-          if (input.length) {
-            input.on('keyup change clear', function () {
-              if (column.search() !== this.value) column.search(this.value).draw();
-            });
-          }
-        });
+            // Apply Select2
+            select.select2({ width: "100%" });
 
-      },
-      error: function(err){
-        console.error(err);
-        $('#detailsTable tbody').html('<tr><td colspan="6">Error loading CSV. Check URL/publish settings.</td></tr>');
-      }
+            // Filtering logic
+            select.on("change", function () {
+              const vals = $(this).val();
+              if (vals && vals.length > 0) {
+                const regex = vals.map(v => $.fn.dataTable.util.escapeRegex(v)).join("|");
+                column.search(regex, true, false).draw();
+              } else {
+                column.search("", true, false).draw();
+              }
+            });
+          });
+        }
+      });
+
+      // Expand/Collapse comments on click
+      $("#detailsTable").on("click", ".comments-cell", function () {
+        $(this).toggleClass("expanded");
+      });
     });
-
-    // escape helper
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-  })();
   </script>
 </body>
 </html>
-
