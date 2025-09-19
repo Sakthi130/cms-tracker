@@ -63,15 +63,7 @@
   <h2 id="agentHeader">Agent Details</h2>
 
   <!-- Update button -->
-  <!-- Update button -->
-<button class="update-btn" id="updateBtn">Update Details</button>
-
-<script>
-  // Redirect to Google Form on button click
-  $("#updateBtn").on("click", function() {
-    window.open("https://forms.gle/EtV5VLiMwMsZ6geN8", "_blank"); 
-  });
-</script>
+  <button class="update-btn" id="updateBtn">Update Details</button>
 
   <table id="detailsTable" class="display" style="width:100%">
     <thead>
@@ -125,19 +117,24 @@
         header: true,
         complete: function (results) {
           const allRows = results.data;
-          const rowsForAgent = allRows.filter(r => r["agent"] === agentName && r["status"] === "won");
+
+          // Filter by Agent + Status = "won"
+          const rowsForAgent = allRows.filter(r =>
+            (r["Agent"] && r["Agent"].trim().toLowerCase() === agentName.trim().toLowerCase()) &&
+            (r["Status"] && r["Status"].trim().toLowerCase() === "won")
+          );
 
           const table = $('#detailsTable').DataTable({
             data: rowsForAgent,
             columns: [
-              { data: "trail id" },
-              { data: "convert date" },
-              { data: "region" },
-              { data: "dept day band" },
-              { data: "pending reason" },
-              { data: "updated band" },
+              { data: "Trail ID" },
+              { data: "Converted_date" },
+              { data: "Region" },
+              { data: "Dept day band" },
+              { data: "Pending Reason" },
+              { data: "Updated band" },
               { 
-                data: "additional comments",
+                data: "Additional comments",
                 render: function(data) {
                   return `<span class="comments-cell">${escapeHtml(data)}</span>`;
                 }
@@ -145,8 +142,8 @@
             ],
             dom: 'Bfrtip',
             buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
-            pageLength: 10, // default
-            lengthMenu: [10, 25, 50, 100], // dropdown
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
             initComplete: function () {
               this.api().columns().every(function () {
                 var column = this;
@@ -171,16 +168,16 @@
             }
           });
 
-          // Expand comments
+          // Expand comments on click
           $('#detailsTable').on('click', '.comments-cell', function() {
             $(this).toggleClass('expanded');
           });
         }
       });
 
-      // Update button click
+      // Update button → open Google Form
       $("#updateBtn").on("click", function() {
-        alert("Update form/modal will go here.");
+        window.open("https://forms.gle/EtV5VLiMwMsZ6geN8", "_blank"); 
       });
     });
   </script>
