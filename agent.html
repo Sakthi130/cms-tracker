@@ -39,8 +39,8 @@
             <th>Pending Reason</th>
             <th>Updated band</th>
             <th>Dept day band</th>
+            <th>Converted Date</th>
           </tr>
-          <!-- we will insert a filter row programmatically -->
         </thead>
         <tbody></tbody>
       </table>
@@ -92,13 +92,15 @@
 
         for (const r of raw) {
           const row = mapRowByLowerKeys(r);
-          if ((row['agent'] || '') === agentName && (row['status'] || '').toLowerCase() === EXPECTED_STATUS) {
+          const status = row['status'] || row['trail status'] || '';
+          if ((row['agent'] || '') === agentName && status.toLowerCase() === EXPECTED_STATUS) {
             rowsForAgent.push({
               trail: row['trail id'] || row['trailid'] || '',
               region: row['region'] || '',
               reason: row['pending reason'] || row['pendingreason'] || '',
               updated: row['updated band'] || row['updatedband'] || row['last updated'] || '',
-              dept: row['dept day band'] || row['deptdayband'] || ''
+              dept: row['dept day band'] || row['deptdayband'] || '',
+              converted: row['converted_date'] || row['convert date'] || row['converted date'] || ''
             });
           }
         }
@@ -113,6 +115,7 @@
             <td>${escapeHtml(r.reason)}</td>
             <td>${escapeHtml(r.updated)}</td>
             <td>${escapeHtml(r.dept)}</td>
+            <td>${escapeHtml(r.converted)}</td>
           </tr>`);
         });
 
@@ -124,6 +127,7 @@
           filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Pending Reason" /></th>');
           filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Updated band" /></th>');
           filterRow.append('<th><select class="filter-select"><option value="">All</option></select></th>');
+          filterRow.append('<th><input type="text" class="filter-input" placeholder="Search Converted Date" /></th>');
           $('#detailsTable thead').append(filterRow);
         }
 
@@ -165,7 +169,7 @@
       },
       error: function(err){
         console.error(err);
-        $('#detailsTable tbody').html('<tr><td colspan="5">Error loading CSV. Check URL/publish settings.</td></tr>');
+        $('#detailsTable tbody').html('<tr><td colspan="6">Error loading CSV. Check URL/publish settings.</td></tr>');
       }
     });
 
