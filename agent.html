@@ -5,32 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Agent Details</title>
 
-  <!-- DataTables CSS -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-  <!-- Select2 CSS -->
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css"/>
+
+  <!-- Select2 (for multi-select filters) -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+  <!-- Font + Styles -->
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Manrope', sans-serif;
       margin: 20px;
+      background-color: #f9f9f9;
     }
-
     h2 {
-      margin-bottom: 20px;
+      color: #09b367;
     }
-
     table.dataTable thead th {
-      background: #09b367;
+      background-color: #09b367;
       color: white;
-      text-align: center;
     }
-
-    table.dataTable tbody td {
-      text-align: center;
-    }
-
-    /* Comments column styling */
     .comments-cell {
       max-width: 300px;
       white-space: nowrap;
@@ -38,20 +33,17 @@
       text-overflow: ellipsis;
       cursor: pointer;
     }
-
     .comments-cell.expanded {
       white-space: normal;
       overflow: visible;
     }
-
-    /* Make filters look cleaner */
-    .filter-select {
-      width: 100% !important;
+    .select2-container .select2-selection--multiple {
+      min-height: 36px;
     }
   </style>
 </head>
 <body>
-  <h2 id="agentTitle">Agent Details</h2>
+  <h2 id="agentHeader">Agent Details</h2>
 
   <table id="detailsTable" class="display" style="width:100%">
     <thead>
@@ -59,119 +51,105 @@
         <th>Trail ID</th>
         <th>Converted Date</th>
         <th>Region</th>
-        <th>Dept day band</th>
+        <th>Dept Day Band</th>
         <th>Pending Reason</th>
-        <th>Updated band</th>
+        <th>Updated Band</th>
         <th>Additional Comments</th>
       </tr>
-      <!-- Filter row will be injected here -->
     </thead>
+    <tfoot>
+      <tr>
+        <th>Trail ID</th>
+        <th>Converted Date</th>
+        <th>Region</th>
+        <th>Dept Day Band</th>
+        <th>Pending Reason</th>
+        <th>Updated Band</th>
+        <th>Additional Comments</th>
+      </tr>
+    </tfoot>
     <tbody></tbody>
   </table>
 
-  <!-- jQuery -->
+  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <!-- DataTables -->
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-  <!-- Select2 -->
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
   <script>
-    // Escape HTML helper
+    // 🔹 Escape function to prevent HTML injection
     function escapeHtml(text) {
       if (!text) return "";
-      return text.replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;");
+      return $('<div/>').text(text).html();
     }
 
     $(document).ready(function () {
-      // Parse agent name from URL
+      // Get agent name from URL
       const params = new URLSearchParams(window.location.search);
       const agentName = params.get("agent");
-      $("#agentTitle").text(`Agent Details - ${agentName}`);
+      $("#agentHeader").text("Agent Details - " + agentName);
 
-      // Dummy data (replace with your actual sheet parsing logic)
-      const rowsForAgent = [
-        {
-          trail: "TR123",
-          date: "2025-09-10",
-          region: "Europe",
-          dept: "<10 days",
-          reason: "Awaiting Docs",
-          updated: "1 day ago",
-          comments: "Customer asked for urgent update, long notes go here for testing text wrapping..."
-        },
-        {
-          trail: "TR456",
-          date: "2025-09-12",
-          region: "Asia",
-          dept: "<5 days",
-          reason: "Pending Payment",
-          updated: "Today",
-          comments: "Payment pending since last week, escalation required."
-        }
-      ];
+      // 🔹 Replace with your actual Google Sheet CSV link
+      const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2olHcvBurEJqZacnbuCGab0BOjTsm2-Hkzdj-HVoTAWtMAWhk3CVR1p4m6_Ld5IQCpdJ9DSBKYzhV/pub?gid=1446258632&single=true&output=csv";
 
-      // Populate table
-      rowsForAgent.forEach(r => {
-        $("#detailsTable tbody").append(`
-          <tr>
-            <td>${escapeHtml(r.trail)}</td>
-            <td>${escapeHtml(r.date)}</td>
-            <td>${escapeHtml(r.region)}</td>
-            <td>${escapeHtml(r.dept)}</td>
-            <td>${escapeHtml(r.reason)}</td>
-            <td>${escapeHtml(r.updated)}</td>
-            <td class="comments-cell">${escapeHtml(r.comments)}</td>
-          </tr>
-        `);
-      });
+      Papa.parse(sheetUrl, {
+        download: true,
+        header: true,
+        complete: function (results) {
+          const allRows = results.data;
+          // Filter only this agent & won rows
+          const rowsForAgent = allRows.filter(r => r["agent"] === agentName && r["status"] === "won");
 
-      // Add filter row
-      $("#detailsTable thead").append('<tr class="filters"></tr>');
-      $("#detailsTable thead tr:eq(0) th").each(function () {
-        $(".filters").append('<th><select class="filter-select" multiple><option value="">All</option></select></th>');
-      });
-
-      // Initialize DataTable
-      const table = $("#detailsTable").DataTable({
-        orderCellsTop: true,
-        fixedHeader: true,
-        initComplete: function () {
-          this.api().columns().every(function () {
-            const column = this;
-            const select = $(".filter-select").eq(column.index());
-
-            // Populate unique options
-            column.data().unique().sort().each(function (d) {
-              if (d) {
-                select.append('<option value="' + d + '">' + d + '</option>');
+          const table = $('#detailsTable').DataTable({
+            data: rowsForAgent,
+            columns: [
+              { data: "trail id" },
+              { data: "convert date" },
+              { data: "region" },
+              { data: "dept day band" },
+              { data: "pending reason" },
+              { data: "updated band" },
+              { 
+                data: "additional comments",
+                render: function(data) {
+                  return `<span class="comments-cell">${escapeHtml(data)}</span>`;
+                }
               }
-            });
+            ],
+            dom: 'Bfrtip',
+            buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+            initComplete: function () {
+              this.api().columns().every(function () {
+                var column = this;
+                var select = $('<select class="filter-select" multiple><option value="">All</option></select>')
+                  .appendTo($(column.footer()).empty())
+                  .on('change', function () {
+                    var vals = $(this).val();
+                    if (vals && vals.length > 0) {
+                      var regex = vals.map(v => $.fn.dataTable.util.escapeRegex(v)).join('|');
+                      column.search(regex, true, false).draw();
+                    } else {
+                      column.search('', true, false).draw();
+                    }
+                  });
 
-            // Apply Select2
-            select.select2({ width: "100%" });
+                column.data().unique().sort().each(function (d) {
+                  if (d) select.append('<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>');
+                });
 
-            // Filtering logic
-            select.on("change", function () {
-              const vals = $(this).val();
-              if (vals && vals.length > 0) {
-                const regex = vals.map(v => $.fn.dataTable.util.escapeRegex(v)).join("|");
-                column.search(regex, true, false).draw();
-              } else {
-                column.search("", true, false).draw();
-              }
-            });
+                // Initialize select2
+                select.select2({ width: '100%' });
+              });
+            }
+          });
+
+          // 🔹 Expandable comments cell
+          $('#detailsTable').on('click', '.comments-cell', function() {
+            $(this).toggleClass('expanded');
           });
         }
-      });
-
-      // Expand/Collapse comments on click
-      $("#detailsTable").on("click", ".comments-cell", function () {
-        $(this).toggleClass("expanded");
       });
     });
   </script>
