@@ -20,11 +20,17 @@
     .btn-primary { background: var(--brand); border-color: var(--brand); }
     .tfoot-total { font-weight:700; background:#f1f6f2; }
     .small-muted { color:#666; font-size:0.9rem; }
+    .top-actions { display:flex; justify-content:flex-end; margin-bottom:12px; gap:10px; }
   </style>
 </head>
 <body>
   <div class="container mt-4 mb-5">
     <h1>Won Trails Summary</h1>
+
+    <!-- TC View button -->
+    <div class="top-actions">
+      <a href="tcview.html" class="btn btn-primary btn-sm">TC View</a>
+    </div>
 
     <div class="card">
       <div class="small-muted mb-2">This view shows unique Trail ID counts per Agent (Status = Won). Click <strong>View</strong> to see details.</div>
@@ -35,7 +41,11 @@
         </thead>
         <tbody id="summaryBody"></tbody>
         <tfoot>
-          <tr class="tfoot-total"><td>Total</td><td id="totalWon"></td><td></td></tr>
+          <tr class="tfoot-total">
+            <td>Total</td>
+            <td id="totalWon"></td>
+            <td><a href="master.html" class="btn btn-primary btn-sm">Master View</a></td>
+          </tr>
         </tfoot>
       </table>
 
