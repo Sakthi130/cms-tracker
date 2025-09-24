@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TC View</title>
+
+  <!-- Google Font + DataTables -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <style>
+    body { font-family:'Manrope',sans-serif; margin:20px; background:#f9f9f9; }
+    h2 { color:#09b367; margin-bottom:20px; }
+    table.dataTable thead th { background:#09b367; color:white; }
+    .comments-cell { max-width:280px; max-height:60px; overflow-y:auto; display:block; padding:4px; font-size:13px; line-height:1.4em; background:#fff; border-radius:4px; }
+    .select2-container .select2-selection--multiple { min-height:36px; }
+  </style>
+</head>
+<body>
+  <h2>TC View - All Agents</h2>
+  <table id="tcTable" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th>Trail ID</th>
+        <th>Customer Name</th>
+        <th>Trip Custodian Name</th>
+        <th>Converted Date</th>
+        <th>Departure Date</th>
+        <th>Region</th>
+        <th>Dept Day Band</th>
+        <th>Pending Reason</th>
+        <th>Updated Band</th>
+        <th>Additional Comments</th>
+      </tr>
+    </thead>
+    <tfoot>
+      <tr>
+        <th>Trail ID</th>
+        <th>Customer Name</th>
+        <th>Trip Custodian Name</th>
+        <th>Converted Date</th>
+        <th>Departure Date</th>
+        <th>Region</th>
+        <th>Dept Day Band</th>
+        <th>Pending Reason</th>
+        <th>Updated Band</th>
+        <th>Additional Comments</th>
+      </tr>
+    </tfoot>
+    <tbody></tbody>
+  </table>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script>
+    function escapeHtml(text) {
+      if (!text) return "";
+      return $('<div/>').text(text).html();
+    }
+
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2olHcvBurEJqZacnbuCGab0BOjTsm2-Hkzdj-HVoTAWtMAWhk3CVR1p4m6_Ld5IQCpdJ9DSBKYzhV/pub?gid=1446258632&single=true&output=csv";
+
+    Papa.parse(sheetUrl, {
+      download: true,
+      header: true,
+      complete: function (results) {
+        const rows = results.data.filter(r => r["Status"] && r["Status"].trim().toLowerCase() === "won");
+
+        $('#tcTable').DataTable({
+          data: rows,
+          columns: [
+            { data: "Trail ID" },
+            { data: "Customer_name" },
+            { data: "Trip_custodian_name" },
+            { data: "Converted_date" },
+            { data: "Departure_date" },
+            { data: "Region" },
+            { data: "Dept day band" },
+            { data: "Pending Reason" },
+            { data: "Updated band" },
+            { 
+              data: "Additional comments",
+              render: d => `<span class="comments-cell">${escapeHtml(d)}</span>`
+            }
+          ],
+          columnDefs: [
+            { type: "date", targets: [3, 4] }
+          ],
+          dom: 'lBfrtip',
+          buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+          pageLength: 10,
+          lengthMenu: [10, 25, 50, 100],
+          initComplete: function () {
+            this.api().columns().every(function () {
+              var column = this;
+              var select = $('<select class="filter-select" multiple><option value="">All</option></select>')
+                .appendTo($(column.footer()).empty())
+                .on('change', function () {
+                  var vals = $(this).val();
+                  if (vals && vals.length > 0) {
+                    var regex = vals.map(v => $.fn.dataTable.util.escapeRegex(v)).join('|
