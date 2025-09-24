@@ -106,5 +106,25 @@
                 .on('change', function () {
                   var vals = $(this).val();
                   if (vals && vals.length > 0) {
-                    var regex = vals.map(v => $.fn.dataTable.util.escapeRegex(v)).join('|
+                    var regex = vals.map(v => $.fn.dataTable.util.escapeRegex(v)).join('|');
+                    column.search(regex, true, false).draw();
+                  } else {
+                    column.search('', true, false).draw();
+                  }
+                });
+
+              column.data().unique().sort().each(function (d) {
+                if (d) select.append('<option value="' + escapeHtml(d) + '">' + escapeHtml(d) + '</option>');
+              });
+
+              select.select2({ width: '100%' });
+            });
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
 
