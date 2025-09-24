@@ -71,7 +71,9 @@
     <thead>
       <tr>
         <th>Trail ID</th>
+        <th>Customer Name</th>
         <th>Converted Date</th>
+        <th>Departure Date</th>
         <th>Region</th>
         <th>Dept Day Band</th>
         <th>Pending Reason</th>
@@ -82,7 +84,9 @@
     <tfoot>
       <tr>
         <th>Trail ID</th>
+        <th>Customer Name</th>
         <th>Converted Date</th>
+        <th>Departure Date</th>
         <th>Region</th>
         <th>Dept Day Band</th>
         <th>Pending Reason</th>
@@ -130,7 +134,9 @@
             data: rowsForAgent,
             columns: [
               { data: "Trail ID" },
+              { data: "Customer_name" },
               { data: "Converted_date" },
+              { data: "Departure_date" },
               { data: "Region" },
               { data: "Dept day band" },
               { data: "Pending Reason" },
@@ -141,6 +147,9 @@
                   return `<span class="comments-cell">${escapeHtml(data)}</span>`;
                 }
               }
+            ],
+            columnDefs: [
+              { type: "date", targets: [2, 3] }  // Force date sorting for Converted_date & Departure_date
             ],
             dom: 'lBfrtip',
             buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
